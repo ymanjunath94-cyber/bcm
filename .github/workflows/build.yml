@@ -17,8 +17,29 @@ jobs:
         with:
           channel: stable
 
-      - name: Create Flutter project (Android)
-        run: flutter create . --platforms=android --org com.bcm
+      # Create a proper Flutter project (Android)
+      - name: Create Flutter project (Android only)
+        run: |
+          flutter create . --platforms=android --org com.bcm
+
+      - name: Add dependencies (Firebase)
+        run: |
+          flutter pub add firebase_core firebase_auth
+
+      # Copy google-services.json that you uploaded into firebase/
+      - name: Copy google-services.json
+        run: |
+          mkdir -p android/app
+          cp firebase/google-services.json android/app/google-services.json
+
+      # Patch Gradle files for Google Services plugin
+      - name: Configure Gradle for Firebase
+        run: |
+          # top-level build.gradle
+          sed -i 's/dependencies {/dependencies {\n        classpath "com.google.gms:google-services:4.4.2"/' android/build.gradle
+
+          # app/build.gradle - apply plugin at bottom
+          echo 'apply plugin: "com.google.gms.google-services"' >> android/app/build.gradle
 
       - name: Install dependencies
         run: flutter pub get
