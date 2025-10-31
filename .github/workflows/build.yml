@@ -9,17 +9,26 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
+
+      # 👇 This creates a proper Android Flutter project in your repo
+      - name: Create Flutter project (Android only)
+        run: flutter create . --platforms=android --org com.bcm
+
       - name: Install dependencies
         run: flutter pub get
+
       - name: Build APK
         run: flutter build apk --debug
+
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: bcm.apk
+          name: bcm_services-debug.apk
           path: build/app/outputs/flutter-apk/app-debug.apk
