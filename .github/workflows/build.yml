@@ -17,8 +17,7 @@ jobs:
         with:
           channel: stable
 
-      # 👇 This creates a proper Android Flutter project in your repo
-      - name: Create Flutter project (Android only)
+      - name: Create Flutter project (Android)
         run: flutter create . --platforms=android --org com.bcm
 
       - name: Install dependencies
