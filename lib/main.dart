@@ -153,14 +153,14 @@ class HomeScreen extends StatelessWidget {
         titleKn: 'RTC ಭೂ ದಾಖಲೆಗಳು',
         icon: Icons.description_outlined,
         onTap: () => _openWeb(
-          'https://bhoomionline.karnataka.gov.in/'),
+          'https://bhoomi.karnataka.gov.in/'),
       ),
       _ServiceCard(
         titleEn: 'Village / Land Map',
         titleKn: 'ಗ್ರಾಮ / ಭೂ ನಕ್ಷೆ',
         icon: Icons.map_outlined,
         onTap: () => _openWeb(
-          'https://bhoomipublic.karnataka.gov.in/landrecords'),
+          'https://www.landrecords.karnataka.gov.in/service2/'),
       ),
       _ServiceCard(
         titleEn: 'News & Notices',
