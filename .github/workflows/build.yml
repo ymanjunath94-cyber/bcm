@@ -30,7 +30,7 @@ jobs:
       - name: Copy google-services.json
         run: |
           mkdir -p android/app
-          cp firebase/google-services.json android/app/google-services.json
+          cp bcm/firebase/google-services.json android/app/google-services.json
 
       # Patch Gradle files for Google Services plugin
       - name: Configure Gradle for Firebase
