@@ -196,7 +196,7 @@ class HomeScreen extends StatelessWidget {
         actions: [
           IconButton(
             tooltip: 'WhatsApp',
-            icon: const Icon(Icons.whatsapp),
+            icon: const Icon(Icons.chat),
             onPressed: () => _openWeb('https://wa.me/$_whatsAppNumber?text=Hello%20BCM'),
           ),
           IconButton(
@@ -348,7 +348,7 @@ class _RequestFormScreenState extends State<RequestFormScreen> {
                       'BCM Service Request:\nTopic: ${widget.topic}\nName: ${_name.text}\nPhone: ${_phone.text}\nVillage: ${_village.text}\nDetails: ${_details.text}';
                   HomeScreen._openWeb('https://wa.me/917760394741?text=${Uri.encodeComponent(text)}');
                 },
-                icon: const Icon(Icons.whatsapp),
+                icon: const Icon(Icons.chat),
                 label: const Text('Send via WhatsApp'),
               ),
             ],
