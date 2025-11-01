@@ -8,71 +8,35 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up Flutter
+      - name: Install Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      - name: Ensure Flutter project (Android only)
-        run: |
-          if [ ! -d android ]; then
-            flutter create . --platforms=android --org com.bcm
-          fi
+      - name: Ensure Android project exists
+        run: flutter create . --platforms=android || true
+
+      - name: flutter pub get
+        run: flutter pub get
 
       - name: Copy google-services.json
         run: |
           mkdir -p android/app
-          if [ -f firebase/google-services.json ]; then
-            cp firebase/google-services.json android/app/google-services.json
-          elif [ -f google-services.json ]; then
-            cp google-services.json android/app/google-services.json
-          else
-            echo "google-services.json not found"; exit 1
-          fi
+          cp firebase/google-services.json android/app/google-services.json
 
-      - name: Configure Gradle for Firebase
+      - name: Apply Google Services plugin
         run: |
-          if [ -f android/build.gradle ]; then
-            grep -q "google-services" android/build.gradle || cat >> android/build.gradle <<'EOF'
+          echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
 
-buildscript {
-    repositories { google(); mavenCentral() }
-    dependencies { classpath 'com.google.gms:google-services:4.4.2' }
-}
-EOF
-          else
-            grep -q "google-services" android/build.gradle.kts || cat >> android/build.gradle.kts <<'EOF'
-
-buildscript {
-    repositories { google(); mavenCentral() }
-    dependencies { classpath("com.google.gms:google-services:4.4.2") }
-}
-EOF
-          fi
-
-          if [ -f android/app/build.gradle ]; then
-            grep -q "google-services" android/app/build.gradle || echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
-            grep -q "multidex" android/app/build.gradle || sed -i 's/defaultConfig {/defaultConfig {\n        multiDexEnabled true/' android/app/build.gradle
-            grep -q "androidx.multidex:multidex" android/app/build.gradle || sed -i 's/dependencies {/dependencies {\n    implementation "androidx.multidex:multidex:2.0.1"/' android/app/build.gradle || true
-          else
-            grep -q "google-services" android/app/build.gradle.kts || echo 'apply(plugin = "com.google.gms.google-services")' >> android/app/build.gradle.kts
-            grep -q "multidex" android/app/build.gradle.kts || sed -i 's/defaultConfig {/defaultConfig {\n        multiDexEnabled = true/' android/app/build.gradle.kts
-            grep -q "androidx.multidex:multidex" android/app/build.gradle.kts || sed -i 's/dependencies {/dependencies {\n    implementation("androidx.multidex:multidex:2.0.1")/' android/app/build.gradle.kts || true
-          fi
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build APK
+      - name: Build APK (debug)
         run: flutter build apk --debug
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: bcm.apk
+          name: bcm-debug.apk
           path: build/app/outputs/flutter-apk/app-debug.apk
