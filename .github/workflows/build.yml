@@ -33,7 +33,7 @@ jobs:
           cp firebase/google-services.json android/app/google-services.json
 
       # Patch Gradle files for Google Services plugin
-      - name: Configure Gradle for Firebase
+      - name:  Configure Gradle for Firebase
       run: |
         # ---- Project-level Gradle (Groovy or KTS) ----
         if [ -f android/build.gradle ]; then
