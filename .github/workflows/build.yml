@@ -18,47 +18,39 @@ jobs:
         with:
           channel: stable
 
-      # Create missing android/ (and other) folders if not present
       - name: Ensure Android project exists
         run: |
-          if [ ! -d android ]; then
-            flutter create .
+          if [ ! -d "android" ]; then
+            flutter create . --platforms=android --overwrite
           fi
 
       - name: flutter pub get
         run: flutter pub get
 
-      # Copy your downloaded Firebase config
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+
       - name: Copy google-services.json
         run: |
           mkdir -p android/app
           cp firebase/google-services.json android/app/google-services.json
 
-      # Make sure Gradle has Google Services plugin set up
-      - name: Add Google Services classpath (if top-level build.gradle exists)
+      - name: Set applicationId / manifest package to match Firebase
         run: |
-          if [ -f android/build.gradle ]; then
-            if ! grep -q 'com.google.gms:google-services' android/build.gradle; then
-              sed -i '/dependencies {/a \        classpath "com.google.gms:google-services:4.4.2"' android/build.gradle
-            fi
+          PKG=$(jq -r '.client[0].client_info.android_client_info.package_name' firebase/google-services.json)
+          sed -i "s/applicationId \".*\"/applicationId \"$PKG\"/g" android/app/build.gradle
+          sed -i "s/package=\"[^\"]*\"/package=\"$PKG\"/g" android/app/src/main/AndroidManifest.xml
+
+      - name: Add Google Services classpath (top-level build.gradle)
+        run: |
+          if [ -f android/build.gradle ] && ! grep -q "com.google.gms:google-services" android/build.gradle; then
+            sed -i 's/dependencies {/dependencies {\n        classpath "com.google.gms:google-services:4.4.2"/' android/build.gradle
           fi
 
       - name: Apply Google Services plugin to app module
         run: |
-          if [ -f android/app/build.gradle ]; then
-            if ! grep -q 'com.google.gms.google-services' android/app/build.gradle; then
-              echo 'apply plugin: "com.google.gms.google-services"' >> android/app/build.gradle
-            fi
-          fi
-
-      # (Optional but recommended) set applicationId to match google-services.json package_name
-      - name: Set applicationId to match Firebase package_name
-        run: |
-          if [ -f android/app/build.gradle ] && [ -f firebase/google-services.json ]; then
-            PKG=$(grep -oP '"package_name"\s*:\s*"\K[^"]+' firebase/google-services.json || true)
-            if [ ! -z "$PKG" ]; then
-              sed -i 's/applicationId\s*".*"/applicationId "'$PKG'"/' android/app/build.gradle || true
-            fi
+          if ! grep -q "com.google.gms.google-services" android/app/build.gradle; then
+            echo 'apply plugin: "com.google.gms.google-services"' >> android/app/build.gradle
           fi
 
       - name: Build APK (debug)
