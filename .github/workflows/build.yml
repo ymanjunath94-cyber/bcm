@@ -28,9 +28,41 @@ jobs:
           mkdir -p android/app
           cp firebase/google-services.json android/app/google-services.json
 
+      # ⬇️ Read package_name from google-services.json and set appId + manifest package
+      - name: Set applicationId to match Firebase
+        run: |
+          APP_ID=$(grep -oP '"package_name":\s*"\K[^"]+' firebase/google-services.json)
+          echo "Using APP_ID=$APP_ID"
+          # set applicationId in app/build.gradle
+          sed -i 's/applicationId "[^"]*"/applicationId "'$APP_ID'"/' android/app/build.gradle || true
+          # if no applicationId line, insert it under defaultConfig
+          if ! grep -q 'applicationId "'$APP_ID'"' android/app/build.gradle; then
+            awk -v appid="$APP_ID" '
+              /defaultConfig\s*{/ && !done {print; print "        applicationId \""appid"\""; done=1; next}
+              {print}
+            ' android/app/build.gradle > /tmp/app.gradle && mv /tmp/app.gradle android/app/build.gradle
+          fi
+          # update AndroidManifest package
+          sed -i 's/package="[^"]*"/package="'$APP_ID'"/' android/app/src/main/AndroidManifest.xml
+
+      # ⬇️ Add Google Services classpath to top-level build.gradle (only once)
+      - name: Add Google Services classpath
+        run: |
+          FILE=android/build.gradle
+          if ! grep -q "com.google.gms:google-services" "$FILE"; then
+            awk '
+              /dependencies\s*{/ && !done {print; print "        classpath \"com.google.gms:google-services:4.4.2\""; done=1; next}
+              {print}
+            ' "$FILE" > /tmp/top.gradle && mv /tmp/top.gradle "$FILE"
+          fi
+
+      # ⬇️ Apply plugin at bottom of app/build.gradle (only once)
       - name: Apply Google Services plugin
         run: |
-          echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
+          APP_FILE=android/app/build.gradle
+          if ! grep -q "com.google.gms.google-services" "$APP_FILE"; then
+            echo "apply plugin: 'com.google.gms.google-services'" >> "$APP_FILE"
+          fi
 
       - name: Build APK (debug)
         run: flutter build apk --debug
