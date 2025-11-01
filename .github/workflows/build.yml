@@ -8,6 +8,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -18,7 +19,10 @@ jobs:
           channel: stable
 
       - name: Ensure Android project exists
-        run: flutter create . --platforms=android || true
+        run: |
+          if [ ! -d "android" ]; then
+            flutter create .
+          fi
 
       - name: flutter pub get
         run: flutter pub get
@@ -27,41 +31,45 @@ jobs:
         run: |
           mkdir -p android/app
           cp firebase/google-services.json android/app/google-services.json
+          echo "✅ Copied firebase/google-services.json -> android/app/google-services.json"
 
-      # ⬇️ Read package_name from google-services.json and set appId + manifest package
-      - name: Set applicationId to match Firebase
+      - name: Set applicationId to match Firebase package_name
         run: |
-          APP_ID=$(grep -oP '"package_name":\s*"\K[^"]+' firebase/google-services.json)
-          echo "Using APP_ID=$APP_ID"
-          # set applicationId in app/build.gradle
-          sed -i 's/applicationId "[^"]*"/applicationId "'$APP_ID'"/' android/app/build.gradle || true
-          # if no applicationId line, insert it under defaultConfig
-          if ! grep -q 'applicationId "'$APP_ID'"' android/app/build.gradle; then
-            awk -v appid="$APP_ID" '
-              /defaultConfig\s*{/ && !done {print; print "        applicationId \""appid"\""; done=1; next}
-              {print}
-            ' android/app/build.gradle > /tmp/app.gradle && mv /tmp/app.gradle android/app/build.gradle
-          fi
-          # update AndroidManifest package
-          sed -i 's/package="[^"]*"/package="'$APP_ID'"/' android/app/src/main/AndroidManifest.xml
-
-      # ⬇️ Add Google Services classpath to top-level build.gradle (only once)
-      - name: Add Google Services classpath
-        run: |
-          FILE=android/build.gradle
-          if ! grep -q "com.google.gms:google-services" "$FILE"; then
-            awk '
-              /dependencies\s*{/ && !done {print; print "        classpath \"com.google.gms:google-services:4.4.2\""; done=1; next}
-              {print}
-            ' "$FILE" > /tmp/top.gradle && mv /tmp/top.gradle "$FILE"
+          PKG=$(grep -oP '"package_name"\s*:\s*"\K[^"]+' firebase/google-services.json || echo "com.bcm.services")
+          APP_GRADLE="android/app/build.gradle"
+          if [ -f "$APP_GRADLE" ]; then
+            if grep -q 'applicationId "' "$APP_GRADLE"; then
+              sed -i "s/applicationId \".*\"/applicationId \"$PKG\"/" "$APP_GRADLE" || true
+            else
+              sed -i "s/defaultConfig {/defaultConfig {\n        applicationId \"$PKG\"/" "$APP_GRADLE" || true
+            fi
+            echo "✅ applicationId set to $PKG"
           fi
 
-      # ⬇️ Apply plugin at bottom of app/build.gradle (only once)
-      - name: Apply Google Services plugin
+      - name: Add Google Services classpath (if top-level build.gradle exists)
         run: |
-          APP_FILE=android/app/build.gradle
-          if ! grep -q "com.google.gms.google-services" "$APP_FILE"; then
-            echo "apply plugin: 'com.google.gms.google-services'" >> "$APP_FILE"
+          TOP="android/build.gradle"
+          if [ -f "$TOP" ]; then
+            if ! grep -q 'com.google.gms:google-services' "$TOP"; then
+              sed -i 's/dependencies {/dependencies {\n        classpath "com.google.gms:google-services:4.4.2"/' "$TOP"
+              echo "✅ Added classpath to $TOP"
+            else
+              echo "ℹ️ Classpath already present in $TOP"
+            fi
+          else
+            echo "ℹ️ android/build.gradle not present (OK for newer Flutter/AGP)."
+          fi
+
+      - name: Apply Google Services plugin to app module
+        run: |
+          APP_GRADLE="android/app/build.gradle"
+          if [ -f "$APP_GRADLE" ]; then
+            if ! grep -q "com.google.gms.google-services" "$APP_GRADLE"; then
+              echo -e "\napply plugin: 'com.google.gms.google-services'" >> "$APP_GRADLE"
+              echo "✅ Applied plugin in $APP_GRADLE"
+            else
+              echo "ℹ️ Plugin already present in $APP_GRADLE"
+            fi
           fi
 
       - name: Build APK (debug)
@@ -70,5 +78,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: bcm-debug.apk
-          path: build/app/outputs/flutter-apk/app-debug.apk 
+          name: app-debug.apk
+          path: build/app/outputs/flutter-apk/app-debug.apk
