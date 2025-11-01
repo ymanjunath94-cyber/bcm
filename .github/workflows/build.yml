@@ -34,21 +34,35 @@ jobs:
 
       # Patch Gradle files for Google Services plugin
       - name: Configure Gradle for Firebase
-        run: |
-          # top-level build.gradle
-          sed -i 's/dependencies {/dependencies {\n        classpath "com.google.gms:google-services:4.4.2"/' android/build.gradle
+      run: |
+        # ---- Project-level Gradle (Groovy or KTS) ----
+        if [ -f android/build.gradle ]; then
+          cat >> android/build.gradle <<'EOF'
 
-          # app/build.gradle - apply plugin at bottom
-          echo 'apply plugin: "com.google.gms.google-services"' >> android/app/build.gradle
+buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies { classpath 'com.google.gms:google-services:4.4.2' }
+}
+EOF
+        else
+          cat >> android/build.gradle.kts <<'EOF'
 
-      - name: Install dependencies
-        run: flutter pub get
+buildscript {
+    repositories { google(); mavenCentral() }
+    dependencies { classpath("com.google.gms:google-services:4.4.2") }
+}
+EOF
+        fi
 
-      - name: Build APK
-        run: flutter build apk --debug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: bcm_services-debug.apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+        # ---- App-level Gradle (Groovy or KTS) ----
+        if [ -f android/app/build.gradle ]; then
+          # Apply Google Services plugin + enable multidex + dependency
+          echo "apply plugin: 'com.google.gms.google-services'" >> android/app/build.gradle
+          sed -i 's/defaultConfig {/defaultConfig {\n        multiDexEnabled true/' android/app/build.gradle
+          sed -i 's/dependencies {/dependencies {\n    implementation "androidx.multidex:multidex:2.0.1"/' android/app/build.gradle || true
+        else
+          # KTS variants
+          echo 'apply(plugin = "com.google.gms.google-services")' >> android/app/build.gradle.kts
+          sed -i 's/defaultConfig {/defaultConfig {\n        multiDexEnabled = true/' android/app/build.gradle.kts
+          sed -i 's/dependencies {/dependencies {\n    implementation("androidx.multidex:multidex:2.0.1")/' android/app/build.gradle.kts || true
+        fi
