@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  WidgetsFlutterBinding.ensureInitialized();
   runApp(const BCMApp());
 }
 
@@ -11,31 +10,57 @@ class BCMApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BCM',
-      debugShowCheckedModeBanner: false, // hides the DEBUG ribbon
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-        useMaterial3: true,
-      ),
-      home: const HomePage(),
+      debugShowCheckedModeBanner: false,
+      title: 'BCM Services',
+      theme: ThemeData(primarySwatch: Colors.green),
+      home: const BCMHomePage(),
     );
   }
 }
 
-class HomePage extends StatelessWidget {
-  const HomePage({super.key});
+class BCMHomePage extends StatelessWidget {
+  const BCMHomePage({super.key});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('BCM • Public Service Assistant')),
-      body: const Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Text(
-            'Welcome to BCM!\nYour public-service assistant app.',
-            textAlign: TextAlign.center,
-            style: TextStyle(fontSize: 20),
+      appBar: AppBar(
+        title: const Text("BCM Services"),
+        backgroundColor: Colors.green,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(20),
+        child: GridView.count(
+          crossAxisCount: 2,
+          mainAxisSpacing: 15,
+          crossAxisSpacing: 15,
+          children: [
+            serviceButton("Land Records"),
+            serviceButton("RTC"),
+            serviceButton("News Feed"),
+            serviceButton("Land Map"),
+            serviceButton("Police Help"),
+            serviceButton("Loan Help"),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget serviceButton(String title) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.green.shade100,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Center(
+        child: Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+            color: Colors.green,
           ),
         ),
       ),
