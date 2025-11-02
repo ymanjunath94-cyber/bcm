@@ -21,7 +21,14 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId = "com.example.bcm"
+        applicationId = " "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1003636773605:android:c7d077f6a4fe1c42abfa0c",
+        "android_client_info": {
+          "package_name": "com.bcm.services"
+        }
+      },"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion 23
