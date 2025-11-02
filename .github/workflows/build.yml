@@ -21,8 +21,7 @@ jobs:
         run: flutter pub get
 
       # Copy google-services.json into the app module (leave as-is if you already commit it under android/app/)
-      - name: Copy google-services.json
-        run: |
+      
           - name: Verify google-services.json
   run: |
     test -f android/app/google-services.json || (echo "Missing android/app/google-services.json" && exit 1)
