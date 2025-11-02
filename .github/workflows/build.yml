@@ -17,15 +17,11 @@ jobs:
         with:
           channel: stable
 
-      - name: Flutter pub get
+      - name: flutter pub get
         run: flutter pub get
 
-      # Copy google-services.json into the app module (leave as-is if you already commit it under android/app/)
-      
-          - name: Verify google-services.json
-  run: |
-    test -f android/app/google-services.json || (echo "Missing android/app/google-services.json" && exit 1)
-
+      - name: Verify google-services.json
+        run: test -f android/app/google-services.json
 
       - name: Build APK (debug)
         run: flutter build apk --debug
