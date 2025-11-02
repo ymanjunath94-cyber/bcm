@@ -8,50 +8,23 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           channel: stable
 
-      - name: Ensure Android project exists
-        run: |
-          if [ ! -d "android" ]; then
-            flutter create . --platforms=android --overwrite
-          fi
-
-      - name: flutter pub get
+      - name: Flutter pub get
         run: flutter pub get
 
-      - name: Install jq
-        run: sudo apt-get update && sudo apt-get install -y jq
-
+      # Copy google-services.json into the app module (leave as-is if you already commit it under android/app/)
       - name: Copy google-services.json
         run: |
           mkdir -p android/app
           cp firebase/google-services.json android/app/google-services.json
-
-      - name: Set applicationId / manifest package to match Firebase
-        run: |
-          PKG=$(jq -r '.client[0].client_info.android_client_info.package_name' firebase/google-services.json)
-          sed -i "s/applicationId \".*\"/applicationId \"$PKG\"/g" android/app/build.gradle
-          sed -i "s/package=\"[^\"]*\"/package=\"$PKG\"/g" android/app/src/main/AndroidManifest.xml
-
-      - name: Add Google Services classpath (top-level build.gradle)
-        run: |
-          if [ -f android/build.gradle ] && ! grep -q "com.google.gms:google-services" android/build.gradle; then
-            sed -i 's/dependencies {/dependencies {\n        classpath "com.google.gms:google-services:4.4.2"/' android/build.gradle
-          fi
-
-      - name: Apply Google Services plugin to app module
-        run: |
-          if ! grep -q "com.google.gms.google-services" android/app/build.gradle; then
-            echo 'apply plugin: "com.google.gms.google-services"' >> android/app/build.gradle
-          fi
 
       - name: Build APK (debug)
         run: flutter build apk --debug
@@ -59,5 +32,5 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-debug
+          name: app-debug.apk
           path: build/app/outputs/flutter-apk/app-debug.apk
